@@ -539,7 +539,7 @@ MCMCStatus DISPATCH_EESamplePhase12(DISPATCH_ErgmState *s,
   int staken, tottaken, ptottaken;
   int iter=0;
   
-  uint_t touter, tinner, l, t = 0;
+  /*uint_t touter, tinner, l, t = 0;*/
 
 /*Rprintf("nsubphases %d\n", nsubphases); */
 
