@@ -18,10 +18,12 @@ MCMCStatus DISPATCH_MetropolisHastings(DISPATCH_ErgmState *s,
 				   double *eta, double *statistics, 
 				   int nsteps, int *staken,
 				   int verbose);
-
 MCMCStatus DISPATCH_MCMCSamplePhase12(DISPATCH_ErgmState *s,
                                double *eta, unsigned int n_param, double gain,
                                int nphase1, int nsubphases, double *networkstatistics,
                                int samplesize, int burnin,
                                int interval, int verbose);
-
+MCMCStatus DISPATCH_EESamplePhase12(DISPATCH_ErgmState *s,
+                               double *theta, unsigned int n_param, double gain, int nphase1, int nsubphases, double *networkstatistics,
+                               int samplesize, int burnin,
+                               int interval, int verbose)
