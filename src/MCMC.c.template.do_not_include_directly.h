@@ -541,7 +541,7 @@ MCMCStatus DISPATCH_EESamplePhase12(DISPATCH_ErgmState *s,
   
   /*uint_t touter, tinner, l, t = 0;*/
 
-/*Rprintf("nsubphases %d\n", nsubphases); */
+  /*Rprintf("nsubphases %d\n", nsubphases); */
 
   /*if (verbose)
     Rprintf("The number of statistics is %i and the total samplesize is %d\n",
