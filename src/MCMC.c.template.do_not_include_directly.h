@@ -259,7 +259,22 @@ MCMCStatus DISPATCH_MetropolisHastings (DISPATCH_ErgmState *s,
   return MCMC_OK;
 }
 
+SEXP DISPATCH_EEAlgorithm (SEXP stateR,
+                          int n,
+                          SEXP theta,
+                          int Mouter, int Minner) {
+// n is the number of parameters, len(theta)
 /* *** don't forget tail -> head */
+// SEXP = argument coming from R
+// TODO move Mouter and Minner to be arguments that come from R
+// TODO do i need D0? the n derivative estimate values of theta
+// TODO check that Minner and Mouter are integers
+// TODO these are to be moved to ergm.R
+double ACA = 1e-09 // multiplier of D0 to get step size multipler
+double compC = 1e-02
+
+
+}
 
 SEXP DISPATCH_MCMCPhase12 (SEXP stateR,
                     // Phase12 settings
@@ -268,6 +283,34 @@ SEXP DISPATCH_MCMCPhase12 (SEXP stateR,
                     SEXP gain, SEXP phase1, SEXP nsub,
                     SEXP maxedges,
                     SEXP verbose){
+
+/* parameter matching between ergm and EE 
+EE -> ERGM
+n -> dont think this is defined in ergm
+n_attr -> n_param
+n_dyad -> not defined I believe -- calculate in the function?
+n_attr_interaction -> not defined I believe -- calculate in the function?
+change_stat_funcs -> ?
+lambda values -> ?
+attr_change_stats_funcs (array of pointers) ->  network statistics (double?)
+dyadic_change_stats_funcs - ? 
+attr_interaction_change_stats_funcs - (array of pointers) - ?
+attr_indices -> again, related to the "attribute interaction change stat funcs"
+attr_interaction_pair_indices -> ^?
+ACA - step size multiplier so unique to the EE algorithm
+theta (out) - output parameters i believe -- must be allocated by user
+dmean (out) - derivative of the above -- must be allocated by user
+theta_outfile - open (write) file to write theta values to - DONT NEED
+useIFDsampler - use IFD sampler instead of basic sampler - EE SPECIFIC
+ifd_K         - constant for multipliying IFD auxiliary parameter (only used if useIFDsampler is True). -- EE SPECIFIC
+useConditionalEstimation - do conditional estimation of snowball sample - EE SPECIFIC
+forbidReciprocity - if True do not allow reciprocated arcs. -- EE SPECIFIC
+useTNTsampler     - use TNT sampler not IFD or basic. -- EE SPECIFIC
+
+Example of usage:
+def algorithm_EE(G, changestats_func_list, theta, D0, Mouter, M, theta_outfile, dzA_outfile):
+*/
+
   GetRNGstate();  /* R function enabling uniform RNG */
   DISPATCH_ErgmState *s = DISPATCH_ErgmStateInit(stateR, 0);
 
@@ -328,6 +371,8 @@ MCMCStatus DISPATCH_MCMCSamplePhase12(DISPATCH_ErgmState *s,
 
   int staken, tottaken, ptottaken;
   int iter=0;
+// \code{control.ergm(style="Robbins-Monro")} to force ergm to be stochastic approximation
+
 
 /*Rprintf("nsubphases %d\n", nsubphases); */
 
@@ -418,6 +463,207 @@ MCMCStatus DISPATCH_MCMCSamplePhase12(DISPATCH_ErgmState *s,
       if(theta_offset[j]) continue;
       for(unsigned int k=0; k<m->n_stats; k++)
         theta[j] -= aDdiaginv[j] * etagrad[j+n_param*k] * networkstatistics[k];
+      if(theta[j] < theta_min[j]) theta[j] = theta_min[j];
+      if(theta[j] > theta_max[j]) theta[j] = theta_max[j];
+    }
+
+    ergm_eta(theta, etamap, eta);
+
+/*Rprintf("\n"); */
+/*    if (verbose){ Rprintf("nsubphases %d i %d\n", nsubphases, i); } */
+    if (i==(nsubphases)){
+      nsubphases = trunc(nsubphases*2.52) + 1;
+      if (verbose){
+        iter++;
+        Rprintf("End of iteration %d; Updating the number of sub-phases to be %d\n",iter,nsubphases);
+      }
+
+      ergm_etagrad(theta, etamap, etagrad);
+
+      for(unsigned int j=0; j<n_param; j++){
+        aDdiaginv[j] /= 2.0;
+        if (verbose){Rprintf("theta_%d = %f; change statistic[%d] = %f\n",
+                             j+1, eta[j], j+1, networkstatistics[j]);}
+      }
+      if (verbose){ Rprintf("\n"); }
+    }
+    /* Set current vector of stats equal to previous vector */
+    memcpy(networkstatistics+m->n_stats, networkstatistics, m->n_stats*sizeof(double));
+    networkstatistics += m->n_stats;
+    /*      if (verbose){ Rprintf("step %d from %d:\n",i, samplesize);} */
+    /* This then adds the change statistics to these values */
+    tottaken += staken;
+
+    R_CheckUserInterrupt();
+#ifdef Win32
+    if( ((100*i) % samplesize)==0 && samplesize > 500){
+      R_FlushConsole();
+      R_ProcessEvents();
+    }
+#endif
+    if (verbose){
+      if( ((3*i) % samplesize)==0 && samplesize > 500){
+        Rprintf("Sampled %d from Metropolis-Hastings\n", i);}
+    }
+
+    if( ((3*i) % samplesize)==0 && tottaken == ptottaken){
+      ptottaken = tottaken;
+      Rprintf("Warning:  Metropolis-Hastings algorithm has accepted only "
+              "%d steps out of a possible %d\n",  ptottaken-tottaken, i);
+    }
+    /*      Rprintf("Sampled %d from %d\n", i, samplesize); */
+
+    /*********************
+    Below is an extremely crude device for letting the user know
+    when the chain doesn't accept many of the proposed steps.
+    *********************/
+/*    if (verbose){ */
+/*      Rprintf("Metropolis-Hastings accepted %7.3f%% of %d steps.\n", */
+/*	      tottaken*100.0/(1.0*interval*samplesize), interval*samplesize);  */
+/*    } */
+/*  }else{ */
+/*    if (verbose){ */
+/*      Rprintf("Metropolis-Hastings accepted %7.3f%% of %d steps.\n", */
+/*	      staken*100.0/(1.0*burnin), burnin);  */
+/*    } */
+  }
+/*  Rprintf("netstats: %d\n", samplesize); */
+/*  for (i=0; i < samplesize; i++){ */
+/*   for (j=0; j < m->n_stats; j++){ */
+/*      Rprintf("%f ", networkstatistics[j+(m->n_stats)*(i)]); */
+/*   } */
+/*  Rprintf("\n"); */
+/*  } */
+  if (verbose){
+    Rprintf("Phase 3: MCMC-Newton-Raphson\n");
+  }
+
+  // eta, etagrad, ubar, u2bar, and aDiaginv freed on return to R.
+
+  return MCMC_OK;
+}
+
+MCMCStatus DISPATCH_EESamplePhase12(DISPATCH_ErgmState *s,
+                               double *theta, unsigned int n_param, double gain, int nphase1, int nsubphases, double *networkstatistics,
+                               int samplesize, int burnin,
+                               int interval, int verbose){
+  DISPATCH_Model *m = s->m;
+  SEXP etamap = getListElement(m->R, "etamap");
+  const int *theta_offset = LOGICAL(getListElement(etamap, "offsettheta"));
+  const double *theta_min = REAL(getListElement(etamap, "mintheta"));
+  const double *theta_max = REAL(getListElement(etamap, "maxtheta"));
+
+  int staken, tottaken, ptottaken;
+  int iter=0;
+  
+  uint_t touter, tinner, l, t = 0;
+
+/*Rprintf("nsubphases %d\n", nsubphases); */
+
+  /*if (verbose)
+    Rprintf("The number of statistics is %i and the total samplesize is %d\n",
+    m->n_stats,samplesize);*/
+
+  /*********************
+  networkstatistics are modified in groups of m->n_stats, and they
+  reflect the CHANGE in the values of the statistics from the
+  original (observed) network.  Thus, when we begin, the initial
+  values of the first group of m->n_stats networkstatistics should
+  all be zero
+  *********************/
+  double *ubar = R_calloc(n_param, double),
+    *u2bar = R_calloc(n_param, double),
+    *aDdiaginv = R_calloc(n_param, double);
+
+  /*********************
+   Burn in step.  While we're at it, use burnin statistics to
+   prepare covariance matrix for Mahalanobis distance calculations
+   in subsequent calls to M-H
+   *********************/
+
+  double *eta = R_calloc(m->n_stats, double),
+    *etagrad = R_calloc(m->n_stats*n_param, double);
+
+  ergm_eta(theta, etamap, eta);
+  ergm_etagrad(theta, etamap, etagrad);
+  
+  // Start EE code
+  /*For now fix these within the function*/
+  /*TODO move them out*/
+  // int Mouter = 1000;
+  // int Minner = 100;
+  // Equilibrium expectation loop
+  // for (touter = 0; touter < Mouter; touter++) {
+  //   for (tinner = 0; tinner < Minner; tinner++) {
+  //     for(l = 0; l < n_param; l++) {
+  //       dzA[l] += addChangeStats[l] - delChangeStats[l]; /* dzA accumulates */
+  //     }
+  //   }
+  // }
+
+  // using the base ERGM package MCMC sampler
+  // is equivalent to the TNT sampler w/ no Borisenko update in EE
+  staken = 0;
+  Rprintf("Starting burnin of %d steps\n", burnin);
+  MCMCStatus status = DISPATCH_MetropolisHastings(s, eta,
+                                           networkstatistics, burnin, &staken,
+                                           verbose);
+  if(status!=MCMC_OK) return status;
+  Rprintf("Phase 1: %d steps (interval = %d)\n", nphase1,interval);
+  /* Now sample networks */
+  for (unsigned int i=0; i <= nphase1; i++){
+    MCMCStatus status = DISPATCH_MetropolisHastings(s, eta,
+                                             networkstatistics, interval, &staken,
+                                             verbose);
+    if(status!=MCMC_OK) return status;
+    if(i > 0) {
+      for(unsigned int j=0; j<n_param; j++){
+        double u = 0;
+        for(unsigned int k=0; k<m->n_stats; k++) u += etagrad[j+n_param*k] * networkstatistics[k];
+        ubar[j]  += u;
+        u2bar[j] += u*u;
+      }
+    }
+  }
+
+  if (verbose){
+    Rprintf("Returned from Phase 1\n");
+    Rprintf("\n gain times inverse variances:\n");
+  }
+  for(unsigned int j=0; j<n_param; j++){
+    if(theta_offset[j]) continue;
+    aDdiaginv[j] = u2bar[j] - ubar[j]*ubar[j]/nphase1;
+    if(aDdiaginv[j] > 0.0){
+      aDdiaginv[j] = nphase1*gain/aDdiaginv[j];
+    }else{
+      aDdiaginv[j]=0.00001;
+    }
+    if(verbose){ Rprintf(" %f", aDdiaginv[j]);}
+  }
+  if(verbose){ Rprintf("\n"); }
+
+  staken = 0;
+  tottaken = 0;
+  ptottaken = 0;
+
+  if (verbose){
+    Rprintf("Phase 2: (samplesize = %d)\n", samplesize);
+  }
+  /* Now sample networks */
+  for (unsigned int i=1; i < samplesize; i++){
+
+    MCMCStatus status = DISPATCH_MetropolisHastings(s, eta,
+                                             networkstatistics, interval, &staken,
+                                             verbose);
+    if(status!=MCMC_OK) return status;
+
+    /* Update eta0 */
+    /*Rprintf("initial:\n"); */
+    for (unsigned int j=0; j<n_param; j++){
+      if(theta_offset[j]) continue;
+      for(unsigned int k=0; k<m->n_stats; k++)
+        // adjusting theta to make the EE update
+        theta[j] -= aDdiaginv[j] * etagrad[j+n_param*k] * networkstatistics[k] * networkstatistics[k] * sign(networkstatistics[k]);
       if(theta[j] < theta_min[j]) theta[j] = theta_min[j];
       if(theta[j] > theta_max[j]) theta[j] = theta_max[j];
     }

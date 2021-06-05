@@ -523,7 +523,7 @@ ergm <- function(formula, response=NULL,
                  offset.coef=NULL,
                  target.stats=NULL,
                  eval.loglik=getOption("ergm.eval.loglik"),
-                 estimate=c("MLE", "MPLE", "CD"),
+                 estimate=c("MLE", "MPLE", "CD", "EE"),
                  control=control.ergm(),
                  verbose=FALSE,..., basis=ergm.getnetwork(formula)) {
   check.control.class("ergm", "ergm")
@@ -546,6 +546,12 @@ ergm <- function(formula, response=NULL,
     control$init.method <- "MPLE"
   }
   
+  if(estimate=="EE"){
+    control$init.method <- "EE"
+    # TODO: check assumption below
+    eval.loglik <- FALSE # set to false for now  
+  }
+
   if(!is.null(control$seed))  set.seed(as.integer(control$seed))
   if (verbose) message("Evaluating network in model.")
   
