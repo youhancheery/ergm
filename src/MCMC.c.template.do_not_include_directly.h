@@ -259,23 +259,6 @@ MCMCStatus DISPATCH_MetropolisHastings (DISPATCH_ErgmState *s,
   return MCMC_OK;
 }
 
-SEXP DISPATCH_EEAlgorithm (SEXP stateR,
-                          int n,
-                          SEXP theta,
-                          int Mouter, int Minner) {
-// n is the number of parameters, len(theta)
-/* *** don't forget tail -> head */
-// SEXP = argument coming from R
-// TODO move Mouter and Minner to be arguments that come from R
-// TODO do i need D0? the n derivative estimate values of theta
-// TODO check that Minner and Mouter are integers
-// TODO these are to be moved to ergm.R
-double ACA = 1e-09 // multiplier of D0 to get step size multipler
-double compC = 1e-02
-
-
-}
-
 SEXP DISPATCH_MCMCPhase12 (SEXP stateR,
                     // Phase12 settings
                     SEXP theta0,
