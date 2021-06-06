@@ -24,6 +24,9 @@
 #define DISPATCH_MetropolisHastings MetropolisHastings
 #define DISPATCH_MCMCPhase12 MCMCPhase12
 #define DISPATCH_MCMCSamplePhase12 MCMCSamplePhase12
+// adding EE definitions
+#define DISPATCH_EEPhase12 EEPhase12
+#define DISPATCH_EESamplePhase12 EESamplePhase12
 
 #include "MCMC.h.template.do_not_include_directly.h"
 

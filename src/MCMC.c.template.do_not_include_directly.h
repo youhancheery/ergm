@@ -267,33 +267,6 @@ SEXP DISPATCH_MCMCPhase12 (SEXP stateR,
                     SEXP maxedges,
                     SEXP verbose){
 
-/* parameter matching between ergm and EE 
-EE -> ERGM
-n -> dont think this is defined in ergm
-n_attr -> n_param
-n_dyad -> not defined I believe -- calculate in the function?
-n_attr_interaction -> not defined I believe -- calculate in the function?
-change_stat_funcs -> ?
-lambda values -> ?
-attr_change_stats_funcs (array of pointers) ->  network statistics (double?)
-dyadic_change_stats_funcs - ? 
-attr_interaction_change_stats_funcs - (array of pointers) - ?
-attr_indices -> again, related to the "attribute interaction change stat funcs"
-attr_interaction_pair_indices -> ^?
-ACA - step size multiplier so unique to the EE algorithm
-theta (out) - output parameters i believe -- must be allocated by user
-dmean (out) - derivative of the above -- must be allocated by user
-theta_outfile - open (write) file to write theta values to - DONT NEED
-useIFDsampler - use IFD sampler instead of basic sampler - EE SPECIFIC
-ifd_K         - constant for multipliying IFD auxiliary parameter (only used if useIFDsampler is True). -- EE SPECIFIC
-useConditionalEstimation - do conditional estimation of snowball sample - EE SPECIFIC
-forbidReciprocity - if True do not allow reciprocated arcs. -- EE SPECIFIC
-useTNTsampler     - use TNT sampler not IFD or basic. -- EE SPECIFIC
-
-Example of usage:
-def algorithm_EE(G, changestats_func_list, theta, D0, Mouter, M, theta_outfile, dzA_outfile):
-*/
-
   GetRNGstate();  /* R function enabling uniform RNG */
   DISPATCH_ErgmState *s = DISPATCH_ErgmStateInit(stateR, 0);
 
@@ -524,6 +497,52 @@ MCMCStatus DISPATCH_MCMCSamplePhase12(DISPATCH_ErgmState *s,
   // eta, etagrad, ubar, u2bar, and aDiaginv freed on return to R.
 
   return MCMC_OK;
+}
+
+SEXP DISPATCH_EEPhase12 (SEXP stateR,
+                    // Phase12 settings
+                    SEXP theta0,
+                    SEXP samplesize, SEXP burnin, SEXP interval,
+                    SEXP gain, SEXP phase1, SEXP nsub,
+                    SEXP maxedges,
+                    SEXP verbose){
+
+  GetRNGstate();  /* R function enabling uniform RNG */
+  DISPATCH_ErgmState *s = DISPATCH_ErgmStateInit(stateR, 0);
+
+  DISPATCH_Model *m = s->m;
+  DISPATCH_MHProposal *MHp = s->MHp;
+
+  SEXP sample = PROTECT(allocVector(REALSXP, asInteger(samplesize)*m->n_stats));
+  memset(REAL(sample), 0, asInteger(samplesize)*m->n_stats*sizeof(double));
+  memcpy(REAL(sample), s->stats, m->n_stats*sizeof(double));
+  unsigned int n_param = length(theta0);
+  SEXP theta = PROTECT(allocVector(REALSXP, n_param));
+  memcpy(REAL(theta), REAL(theta0), n_param*sizeof(double));
+
+  SEXP status;
+  if(MHp) status = PROTECT(ScalarInteger(DISPATCH_EESamplePhase12(s,
+                                                           REAL(theta), n_param, asReal(gain), asInteger(phase1), asInteger(nsub), REAL(sample), asInteger(samplesize),
+                                                           asInteger(burnin), asInteger(interval),
+                                                           asInteger(verbose))));
+  else status = PROTECT(ScalarInteger(MCMC_MH_FAILED));
+
+  const char *outn[] = {"status", "s", "theta", "state", ""};
+  SEXP outl = PROTECT(mkNamed(VECSXP, outn));
+  SET_VECTOR_ELT(outl, 0, status);
+  SET_VECTOR_ELT(outl, 1, sample);
+  SET_VECTOR_ELT(outl, 2, theta);
+
+  /* record new generated network to pass back to R */
+  if(asInteger(status) == MCMC_OK && asInteger(maxedges)>0){
+    s->stats = REAL(sample) + (asInteger(samplesize)-1)*m->n_stats;
+    SET_VECTOR_ELT(outl, 3, DISPATCH_ErgmStateRSave(stateR, s));
+  }
+
+  DISPATCH_ErgmStateDestroy(s);
+  PutRNGstate();  /* Disable RNG before returning */
+  UNPROTECT(4);
+  return outl;
 }
 
 MCMCStatus DISPATCH_EESamplePhase12(DISPATCH_ErgmState *s,
