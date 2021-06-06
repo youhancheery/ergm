@@ -665,7 +665,7 @@ MCMCStatus DISPATCH_EESamplePhase12(DISPATCH_ErgmState *s,
       if(theta_offset[j]) continue;
       for(unsigned int k=0; k<m->n_stats; k++)
         // adjusting theta to make the EE update
-        theta[j] -= aDdiaginv[j] * etagrad[j+n_param*k] * networkstatistics[k] * networkstatistics[k] * (networkstatistics[k] < 0 ? 1 : -1)
+        theta[j] -= aDdiaginv[j] * etagrad[j+n_param*k] * networkstatistics[k] * networkstatistics[k] * (networkstatistics[k] < 0 ? -1 : 1)
       if(theta[j] < theta_min[j]) theta[j] = theta_min[j];
       if(theta[j] > theta_max[j]) theta[j] = theta_max[j];
     }
