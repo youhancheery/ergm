@@ -26,4 +26,4 @@ MCMCStatus DISPATCH_MCMCSamplePhase12(DISPATCH_ErgmState *s,
 MCMCStatus DISPATCH_EESamplePhase12(DISPATCH_ErgmState *s,
                                double *theta, unsigned int n_param, double gain, int nphase1, int nsubphases, double *networkstatistics,
                                int samplesize, int burnin,
-                               int interval, int verbose)
+                               int interval, int verbose);

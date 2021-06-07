@@ -23,6 +23,8 @@
 #define DISPATCH_MetropolisHastings WtMetropolisHastings
 #define DISPATCH_MCMCPhase12 WtMCMCPhase12
 #define DISPATCH_MCMCSamplePhase12 WtMCMCSamplePhase12
-
+#define DISPATCH_EEPhase12 WtEEPhase12
+#define DISPATCH_EESamplePhase12 WtEESamplePhase12
+ 
 #include "MCMC.h.template.do_not_include_directly.h"
 #endif

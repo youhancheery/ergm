@@ -548,7 +548,7 @@ SEXP DISPATCH_EEPhase12 (SEXP stateR,
 MCMCStatus DISPATCH_EESamplePhase12(DISPATCH_ErgmState *s,
                                double *theta, unsigned int n_param, double gain, int nphase1, int nsubphases, double *networkstatistics,
                                int samplesize, int burnin,
-                               int interval, int verbose){
+                               int interval, int verbose) {
   DISPATCH_Model *m = s->m;
   SEXP etamap = getListElement(m->R, "etamap");
   const int *theta_offset = LOGICAL(getListElement(etamap, "offsettheta"));
