@@ -780,7 +780,9 @@ ergm <- function(formula, response=NULL,
   
   if(control$init.method=="CD") if(is.null(names(control$init)))
       names(control$init) <- param_names(model, FALSE)
-  
+  # add similar for EE
+  if(control$init.method=="EE") if(is.null(names(control$init)))
+      names(control$init) <- param_names(model, FALSE)
   initialfit <- ergm.initialfit(init=control$init, initial.is.final=!MCMCflag,
                                 formula=formula, nw=nw, reference=reference, 
                                 m=model, method=control$init.method,
@@ -799,13 +801,18 @@ ergm <- function(formula, response=NULL,
          CD = NVL3(initialfit$sample, check_nonidentifiability(as.matrix(.), initialfit$coef, model,
                                                                tol = control$MPLE.nonident.tol, type="statistics",
                                                                nonident_action = control$MPLE.nonident,
-                                                               nonvar_action = control$MPLE.nonvar))
+                                                               nonvar_action = control$MPLE.nonvar)),
+         EE = NVL3(initialfit$sample, check_nonidentifiability(as.matrix(.), initialfit$coef, model,
+                                                               tol = control$MPLE.nonident.tol, type="statistics",
+                                                               nonident_action = control$MPLE.nonident,
+                                                               nonvar_action = control$MPLE.nonvar)),                                                               
          )
 
   estimate.desc <- switch(estimate,
                           MPLE = if(MPLE.is.MLE) "Maximum Likelihood"
                                  else "Maximum Pseudolikelihood",
                           CD = "Contrastive Divergence",
+                          EE = "Equilibrium Expectation",
                           MLE = paste0(if(MCMCflag) # If not, it's just MLE.
                                          switch(control$main.method,
                                                 MCMLE = "Monte Carlo ",
