@@ -45,7 +45,7 @@ ergm.phase12 <- function(s, theta0,
 
   z <-
     if(!is.valued(s))
-      .Call("MCMCPhase12",
+      .Call("EEPhase12",
             s,
             # Phase12 settings
             as.double(deInf(theta0)),
@@ -55,7 +55,7 @@ ergm.phase12 <- function(s, theta0,
             as.integer(verbose),
             PACKAGE="ergm")
     else
-      .Call("WtMCMCPhase12",
+      .Call("WtEEPhase12",
             s,
             # Phase12 settings
             as.double(deInf(theta0)),

@@ -523,7 +523,7 @@ ergm <- function(formula, response=NULL,
                  offset.coef=NULL,
                  target.stats=NULL,
                  eval.loglik=getOption("ergm.eval.loglik"),
-                 estimate=c("MLE", "MPLE", "CD", "EE"),
+                 estimate=c("MLE", "MPLE", "CD"),
                  control=control.ergm(),
                  verbose=FALSE,..., basis=ergm.getnetwork(formula)) {
   check.control.class("ergm", "ergm")
@@ -546,11 +546,11 @@ ergm <- function(formula, response=NULL,
     control$init.method <- "MPLE"
   }
   
-  if(estimate=="EE"){
-    control$init.method <- "EE"
-    # TODO: check assumption below
-    eval.loglik <- FALSE # set to false for now  
-  }
+  # if(estimate=="EE"){
+  #   control$init.method <- "EE"
+  #   # TODO: check assumption below
+  #   eval.loglik <- FALSE # set to false for now  
+  # }
 
   if(!is.null(control$seed))  set.seed(as.integer(control$seed))
   if (verbose) message("Evaluating network in model.")
@@ -781,8 +781,8 @@ ergm <- function(formula, response=NULL,
   if(control$init.method=="CD") if(is.null(names(control$init)))
       names(control$init) <- param_names(model, FALSE)
   # add similar for EE
-  if(control$init.method=="EE") if(is.null(names(control$init)))
-      names(control$init) <- param_names(model, FALSE)
+  # if(control$init.method=="EE") if(is.null(names(control$init)))
+  #     names(control$init) <- param_names(model, FALSE)
   initialfit <- ergm.initialfit(init=control$init, initial.is.final=!MCMCflag,
                                 formula=formula, nw=nw, reference=reference, 
                                 m=model, method=control$init.method,
@@ -801,11 +801,7 @@ ergm <- function(formula, response=NULL,
          CD = NVL3(initialfit$sample, check_nonidentifiability(as.matrix(.), initialfit$coef, model,
                                                                tol = control$MPLE.nonident.tol, type="statistics",
                                                                nonident_action = control$MPLE.nonident,
-                                                               nonvar_action = control$MPLE.nonvar)),
-         EE = NVL3(initialfit$sample, check_nonidentifiability(as.matrix(.), initialfit$coef, model,
-                                                               tol = control$MPLE.nonident.tol, type="statistics",
-                                                               nonident_action = control$MPLE.nonident,
-                                                               nonvar_action = control$MPLE.nonvar)),                                                               
+                                                               nonvar_action = control$MPLE.nonvar))                                                     
          )
 
   estimate.desc <- switch(estimate,
@@ -839,7 +835,7 @@ ergm <- function(formula, response=NULL,
     initialfit$obs.constraints <- obs.constraints 
     initialfit$target.stats <- suppressWarnings(na.omit(model$target.stats))
     initialfit$nw.stats <- model$nw.stats
-      initialfit$etamap <- model$etamap
+    initialfit$etamap <- model$etamap
     initialfit$target.esteq <- suppressWarnings(na.omit(if(!is.null(model$target.stats)) ergm.estfun(rbind(model$target.stats), initialfit$coef, model)))
     initialfit$estimate <- estimate
     initialfit$estimate.desc <- estimate.desc
@@ -880,12 +876,16 @@ ergm <- function(formula, response=NULL,
                     "MCMLE" = ergm.MCMLE(init, nw,
                                          model, 
                                          # no need to pass initialfit to MCMLE
+                                         method, # added for EE
                                          initialfit=(initialfit<-NULL),
                                          control=control, proposal=proposal,
                                          proposal.obs=proposal.obs,
                                          verbose=verbose,
                                          ...),
-                    
+                    # EE call similar to stochapprox control method
+                    "EE"= ergm.ee(init, nw, model,
+                                  control=control, proposal=proposal,
+                                  verbose=verbose),
                     
                     stop("Method ", control$main.method, " is not implemented.")
   )
