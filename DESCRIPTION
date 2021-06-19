@@ -116,6 +116,7 @@ Collate:
     'ergm.bridge.R'
     'ergm.curved.statsmatrix.R'
     'ergm.design.R'
+    'ergm.ee.R'
     'ergm.errors.R'
     'ergm.estimate.R'
     'ergm.eta.R'
