@@ -609,7 +609,7 @@ control.ergm<-function(drop=TRUE,
                        SA.burnin=SA.interval*16,
                        SA.samplesize=1024,
 
-                       EE.phase1_n=NULL, SA.initial_gain=NULL, 
+                       EE.phase1_n=NULL, EE.initial_gain=NULL, 
                        EE.nsubphases=4,
                        EE.niterations=NULL, 
                        EE.phase3_n=NULL,
