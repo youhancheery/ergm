@@ -814,7 +814,7 @@ ergm <- function(formula, response=NULL,
                                                 `Stochastic-Approximation`="Stochastic Approximation ",
                                                 `Robbins-Monro`="Robbins-Monro ",
                                                 `Stepping`="Hummel Stepping ",
-                                                EE = "Equilibrium Expectation "),
+                                                `EE`="Equilibrium Expectation "),
                                        "Maximum Likelihood"))
 
   if (!MCMCflag){ # Just return initial (non-MLE) fit and exit.
