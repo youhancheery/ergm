@@ -40,9 +40,9 @@ SEXP DISPATCH_MCMC_wrapper(SEXP stateR,
 
   SEXP status;
   if(MHp) status = PROTECT(ScalarInteger(DISPATCH_MCMCSample(s,
-                                                      REAL(eta), REAL(sample), asInteger(samplesize),
-                                                      asInteger(burnin), asInteger(interval), asInteger(maxedges),
-                                                      asInteger(verbose))));
+                                                            REAL(eta), REAL(sample), asInteger(samplesize),
+                                                            asInteger(burnin), asInteger(interval), asInteger(maxedges),
+                                                            asInteger(verbose))));
   else status = PROTECT(ScalarInteger(MCMC_MH_FAILED));
 
   const char *outn[] = {"status", "s", "state", ""};
@@ -648,6 +648,8 @@ MCMCStatus DISPATCH_EESamplePhase12(DISPATCH_ErgmState *s,
   tottaken = 0;
   ptottaken = 0;
 
+  float K_a = 1E-4; // positive constant. Can be adjusted as per supplementary paper
+
   if (verbose){
     Rprintf("Phase 2: (samplesize = %d)\n", samplesize);
   }
@@ -665,7 +667,7 @@ MCMCStatus DISPATCH_EESamplePhase12(DISPATCH_ErgmState *s,
       if(theta_offset[j]) continue;
       for(unsigned int k=0; k<m->n_stats; k++)
         // adjusting theta to make the EE update
-        theta[j] -= aDdiaginv[j] * etagrad[j+n_param*k] * networkstatistics[k] * networkstatistics[k] * (networkstatistics[k] < 0 ? -1 : 1);
+        theta[j] -= aDdiaginv[j] * etagrad[j+n_param*k] * networkstatistics[k] * networkstatistics[k] * (networkstatistics[k] < 0 ? -1 : 1) * K_a;
       if(theta[j] < theta_min[j]) theta[j] = theta_min[j];
       if(theta[j] > theta_max[j]) theta[j] = theta_max[j];
     }
