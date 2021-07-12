@@ -876,7 +876,6 @@ ergm <- function(formula, response=NULL,
                     "MCMLE" = ergm.MCMLE(init, nw,
                                          model, 
                                          # no need to pass initialfit to MCMLE
-                                         method, # added for EE
                                          initialfit=(initialfit<-NULL),
                                          control=control, proposal=proposal,
                                          proposal.obs=proposal.obs,
